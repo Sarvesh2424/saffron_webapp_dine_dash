@@ -46,7 +46,7 @@ function Router() {
         <Route path="/reports" component={Reports} />
         <Route path="/support" component={Support} />
         <Route path="/settings" component={Settings} />
-        <Route path="/login">
+        <Route path="/login" component={Login}>
           <Redirect to="/" />
         </Route>
         <Route component={NotFound} />

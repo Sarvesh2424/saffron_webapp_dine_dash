@@ -32,6 +32,7 @@ import {
 } from "recharts";
 import { usd, dateShort, minutesAgoLabel } from "@/lib/format";
 import { motion } from "framer-motion";
+import { Redirect } from "wouter";
 
 const activityIcons = [Hotel, Plane, ShoppingCart, FileCode, Receipt];
 
@@ -64,6 +65,10 @@ export default function Dashboard() {
       flashRevenue,
     };
   }, [orders, flashDeals]);
+
+  if (!restaurantProfile) {
+    <Redirect to="/login" />;
+  }
 
   return (
     <div className="space-y-4">
@@ -189,7 +194,7 @@ export default function Dashboard() {
                     <FlashCard
                       title={item!.name}
                       value={deal.discount.toString()}
-                      caption={deal.duration.toString()+' min'}
+                      caption={deal.duration.toString() + " min"}
                       hue={28}
                       variant="dark"
                     />

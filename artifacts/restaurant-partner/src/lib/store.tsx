@@ -18,12 +18,12 @@ import {
   type TicketSource,
   type TicketIssueType,
   type MenuItem,
-  DeliveryPartner,
-  Restaurant,
+  type DeliveryPartner,
+  type Restaurant,
 } from "./mockData";
 import { Redirect, useLocation } from "wouter";
 
-export const API_BASE_URL = "https://dinedash-backend-1.onrender.com/api";
+export const API_BASE_URL = "http://localhost:4000/api";
 
 type RestaurantStatus = {
   open: boolean;
@@ -132,21 +132,69 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [restaurantProfile, setRestaurantProfile] = useState<Restaurant | null>(
     null,
   );
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    // Basic structural boot check to prevent layout flashing on refresh
-    return localStorage.getItem("dinedash_logged_in") === "true";
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   const login = async (mobile: string, pass: string): Promise<boolean> => {
     try {
-      await axios.post(
+      const response = await axios.post(
         `${API_BASE_URL}/login/restaurant-login`, // Verified backend admin controller route mapping
         { mobile, password: pass },
         { withCredentials: true }, // Permits browser engine to store the HTTP-only cookie
       );
 
+      console.log(response);
+      const rawRestaurantData =
+        response.data?.result?.restaurant || response.data?.restaurant;
+
+      if (!rawRestaurantData) {
+        console.error(
+          "Authentication succeeded, but restaurant profile payload is missing from response.",
+        );
+        return false;
+      }
+
+      // 3. Enforce complete structural safety on the workingHours matrix to safeguard your dashboard views
+      const standardDays: (
+        | "Monday"
+        | "Tuesday"
+        | "Wednesday"
+        | "Thursday"
+        | "Friday"
+        | "Saturday"
+        | "Sunday"
+      )[] = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ];
+
+      const enforcedWorkingHours = standardDays.map((dayName) => {
+        const existingDayRecord = rawRestaurantData.workingHours?.find(
+          (h: any) => h.day === dayName,
+        );
+        return (
+          existingDayRecord || {
+            day: dayName,
+            status: "Closed",
+            startTime: "09:00",
+            endTime: "22:00",
+          }
+        );
+      });
+
+      const normalizedProfile = {
+        ...rawRestaurantData,
+        workingHours: enforcedWorkingHours,
+      };
+
+      // 4. Wipe out the old stale state cache completely by overriding it with the freshly logged-in restaurant object
+      setRestaurantProfile(normalizedProfile);
+
       setIsAuthenticated(true);
-      localStorage.setItem("dinedash_logged_in", "true");
 
       return true;
     } catch (err) {
@@ -167,8 +215,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } finally {
       // 2. Clear state inside finally block so the user interface resets even on network hiccup
       setIsAuthenticated(false);
+      setRestaurantProfile(null);
       setLocation("/login");
-      localStorage.removeItem("dinedash_logged_in");
 
       // 3. Force an immediate screen reload or hard routing bounce to completely clear cached memory models
       window.location.href = "/login";
@@ -179,9 +227,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // ----------------------------------------------------
   useEffect(() => {
     const hydrateDashboardFromBackend = async () => {
+      console.log(restaurantProfile?.ownerName);
       try {
         setLoading(true);
 
+        const sessionVerifyRes = await axios.get(
+          `${API_BASE_URL}/admin/verify-session`,
+          { withCredentials: true },
+        );
+        console.log("here");
+        // This is your active restaurant ID pulled securely via the cookie!
+        const activeRestaurantId = sessionVerifyRes.data.result?.restaurantId;
+        console.log(activeRestaurantId);
+
+        if (!activeRestaurantId) {
+          throw new Error("Unable to resolve restaurant identity parameters.");
+        } else {
+          setIsAuthenticated(true);
+        }
+        console.log(restaurantProfile);
         // Fetching structural app data in parallel via concurrent Promise mapping
         const [
           ordersRes,
@@ -193,25 +257,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ticketsRes,
         ] = await Promise.all([
           axios.get(`${API_BASE_URL}/admin/get-orders`, {
-            params: { restaurantId: restaurantProfile?.restaurantId }, // Fixed axios params layout syntax!
+            withCredentials: true,
           }),
           axios.get(`${API_BASE_URL}/admin/get-dishes`, {
-            params: { restaurantId: restaurantProfile?.restaurantId }, // Fixed axios params layout syntax!
+            withCredentials: true,
           }),
           axios.get(`${API_BASE_URL}/admin/get-offers`, {
-            params: { restaurantId: restaurantProfile?.restaurantId }, // Fixed axios params layout syntax!
+            withCredentials: true,
           }),
-          axios.get(`${API_BASE_URL}/admin/get-flashDeals`,  {
-            params: { restaurantId: restaurantProfile?.restaurantId }, // Fixed axios params layout syntax!
+          axios.get(`${API_BASE_URL}/admin/get-flashDeals`, {
+            withCredentials: true,
           }),
-          axios.get(`${API_BASE_URL}/admin/get-couriers`,  {
-            params: { restaurantId: restaurantProfile?.restaurantId }, // Fixed axios params layout syntax!
+          axios.get(`${API_BASE_URL}/admin/get-couriers`, {
+            withCredentials: true,
           }),
-          axios.get(`${API_BASE_URL}/admin/get-restaurant`,  {
-            params: { restaurantId: restaurantProfile?.restaurantId }, // Fixed axios params layout syntax!
+          axios.get(`${API_BASE_URL}/admin/get-restaurant`, {
+            withCredentials: true,
           }),
-          axios.get(`${API_BASE_URL}/admin/get-tickets`,  {
-            params: { restaurantId: restaurantProfile?.restaurantId }, // Fixed axios params layout syntax!
+          axios.get(`${API_BASE_URL}/admin/get-tickets`, {
+            withCredentials: true,
           }),
         ]);
 
@@ -368,7 +432,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
 
     hydrateDashboardFromBackend();
-  }, []);
+  }, [isAuthenticated]);
 
   // ----------------------------------------------------
   // 📤 MUTATION & ACTION CONFIGURATIONS
@@ -1071,14 +1135,64 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       login: async (mobile: string, pass: string): Promise<boolean> => {
         try {
-          await axios.post(
+          const response = await axios.post(
             `${API_BASE_URL}/login/restaurant-login`, // Verified backend admin controller route mapping
             { mobile, password: pass },
             { withCredentials: true }, // Permits browser engine to store the HTTP-only cookie
           );
 
+          console.log(response);
+          const rawRestaurantData =
+            response.data?.result?.restaurant || response.data?.restaurant;
+
+          if (!rawRestaurantData) {
+            console.error(
+              "Authentication succeeded, but restaurant profile payload is missing from response.",
+            );
+            return false;
+          }
+
+          // 3. Enforce complete structural safety on the workingHours matrix to safeguard your dashboard views
+          const standardDays: (
+            | "Monday"
+            | "Tuesday"
+            | "Wednesday"
+            | "Thursday"
+            | "Friday"
+            | "Saturday"
+            | "Sunday"
+          )[] = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+          ];
+
+          const enforcedWorkingHours = standardDays.map((dayName) => {
+            const existingDayRecord = rawRestaurantData.workingHours?.find(
+              (h: any) => h.day === dayName,
+            );
+            return (
+              existingDayRecord || {
+                day: dayName,
+                status: "Closed",
+                startTime: "09:00",
+                endTime: "22:00",
+              }
+            );
+          });
+
+          const normalizedProfile = {
+            ...rawRestaurantData,
+            workingHours: enforcedWorkingHours,
+          };
+
+          // 4. Wipe out the old stale state cache completely by overriding it with the freshly logged-in restaurant object
+          setRestaurantProfile(normalizedProfile);
           setIsAuthenticated(true);
-          localStorage.setItem("dinedash_logged_in", "true");
 
           return true;
         } catch (err) {
@@ -1098,9 +1212,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           console.error("Backend cookie clearance pipeline rejected:", err);
         } finally {
           // 2. Clear state inside finally block so the user interface resets even on network hiccup
+          setRestaurantProfile(null);
           setIsAuthenticated(false);
           setLocation("/login");
-          localStorage.removeItem("dinedash_logged_in");
 
           // 3. Force an immediate screen reload or hard routing bounce to completely clear cached memory models
           window.location.href = "/login";

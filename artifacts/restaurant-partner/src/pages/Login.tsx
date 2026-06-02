@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
-import { useLocation } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { toast } from "sonner";
 
 export default function Login() {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { login } = useStore();
+  const { login, isAuthenticated } = useStore();
   const [, setLocation] = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,18 +29,28 @@ export default function Login() {
     }
   };
 
+  if (isAuthenticated) {
+    setLocation("/");
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 font-sans text-zinc-100">
       <div className="w-full max-w-md space-y-8 rounded-xl border border-zinc-800 bg-background p-8 backdrop-blur-sm">
         <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-orange-500">Dinedash admin panel</h2>
-          <p className="mt-2 text-sm text-zinc-400">Merchant Dashboard Authentication Portal</p>
+          <h2 className="text-3xl font-bold tracking-tight text-orange-500">
+            Dinedash admin panel
+          </h2>
+          <p className="mt-2 text-sm text-zinc-400">
+            Merchant Dashboard Authentication Portal
+          </p>
         </div>
 
         <form className="mt-8  space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">Mobile Number</label>
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                Mobile Number
+              </label>
               <input
                 type="text"
                 required
@@ -51,7 +61,9 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">Password</label>
+              <label className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                Password
+              </label>
               <input
                 type="password"
                 required

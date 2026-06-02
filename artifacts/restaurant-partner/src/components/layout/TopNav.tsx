@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link, Redirect, useLocation } from "wouter";
 import {
   Bell,
   Search,
@@ -53,6 +53,10 @@ export function TopNav() {
       : status.open
         ? "bg-emerald-500"
         : "bg-muted-foreground";
+
+  if (!restaurantProfile) {
+    <Redirect to="/login" />;
+  }
 
   return (
     <header
@@ -186,10 +190,14 @@ export function TopNav() {
               </div>
               <div className="text-left leading-tight hidden lg:block">
                 <div className="text-sm font-medium">
-                  {restaurantProfile!.ownerName}
+                  {restaurantProfile
+                    ? restaurantProfile.ownerName
+                    : "Not logged in"}
                 </div>
                 <div className="text-[11px] text-muted-foreground">
-                  {restaurantProfile!.email}
+                  {restaurantProfile
+                    ? restaurantProfile.email
+                    : "Not logged in"}
                 </div>
               </div>
               <ChevronDown className="size-3.5 text-muted-foreground hidden sm:block" />
