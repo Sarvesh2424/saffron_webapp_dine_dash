@@ -151,6 +151,7 @@ export default function FlashFood() {
                     <span>
                       {remaining} left · {d.duration} min window
                     </span>
+                    {!d.active && <p className="text-red-500">Not active</p>}
                   </div>
                   <div className="mt-1.5 h-1.5 bg-secondary rounded-full overflow-hidden">
                     <div

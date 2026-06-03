@@ -23,7 +23,8 @@ import {
 } from "./mockData";
 import { Redirect, useLocation } from "wouter";
 
-export const API_BASE_URL = "https://dinedash-backend-1.onrender.com/api";
+// export const API_BASE_URL = "https://dinedash-backend-1.onrender.com/api";
+export const API_BASE_URL = "http://localhost:4000/api";
 
 type RestaurantStatus = {
   open: boolean;
@@ -142,7 +143,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         { withCredentials: true }, // Permits browser engine to store the HTTP-only cookie
       );
 
-      console.log(response);
       const rawRestaurantData =
         response.data?.result?.restaurant || response.data?.restaurant;
 
@@ -223,11 +223,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   };
   // ----------------------------------------------------
-  // 📥 DATABASE HYDRATION LAYER (Runs once on mount)
+  //  DATABASE HYDRATION LAYER (Runs once on mount)
   // ----------------------------------------------------
   useEffect(() => {
     const hydrateDashboardFromBackend = async () => {
-      console.log(restaurantProfile?.ownerName);
       try {
         setLoading(true);
 
@@ -235,17 +234,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           `${API_BASE_URL}/admin/verify-session`,
           { withCredentials: true },
         );
-        console.log("here");
         // This is your active restaurant ID pulled securely via the cookie!
         const activeRestaurantId = sessionVerifyRes.data.result?.restaurantId;
-        console.log(activeRestaurantId);
 
         if (!activeRestaurantId) {
           throw new Error("Unable to resolve restaurant identity parameters.");
         } else {
           setIsAuthenticated(true);
         }
-        console.log(restaurantProfile);
         // Fetching structural app data in parallel via concurrent Promise mapping
         const [
           ordersRes,
@@ -301,7 +297,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             })),
           }),
         );
-        console.log(normalizedOrders);
 
         setOrders(normalizedOrders);
         const dayMap: Record<string, { revenue: number; orders: number }> = {
@@ -717,7 +712,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setFlashDeals((arr) => arr.filter((d) => d.flashDealId !== id));
 
         try {
-          console.log(id);
           await axios.delete(`${API_BASE_URL}/admin/delete-flashDeal/${id}`);
           console.log(
             `Successfully dropped flash deal document template identifier: ${id}`,
@@ -1141,7 +1135,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             { withCredentials: true }, // Permits browser engine to store the HTTP-only cookie
           );
 
-          console.log(response);
           const rawRestaurantData =
             response.data?.result?.restaurant || response.data?.restaurant;
 

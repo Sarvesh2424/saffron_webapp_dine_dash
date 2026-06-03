@@ -240,7 +240,6 @@ export default function Orders() {
 
                   <div className="rounded-xl bg-secondary p-3 space-y-2">
                     {o.items.map((it) => {
-                      console.log(it);
                       return (
                         <div
                           key={it.dishId}
