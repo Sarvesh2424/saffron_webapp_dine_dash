@@ -23,8 +23,8 @@ import {
 } from "./mockData";
 import { Redirect, useLocation } from "wouter";
 
-// export const API_BASE_URL = "https://dinedash-backend-1.onrender.com/api";
-export const API_BASE_URL = "http://localhost:4000/api";
+export const API_BASE_URL = "https://dinedash-backend-1.onrender.com/api";
+// export const API_BASE_URL = "http://localhost:4000/api";
 
 type RestaurantStatus = {
   open: boolean;
